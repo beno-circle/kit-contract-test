@@ -93,7 +93,7 @@ async function main() {
             feeIsBips: false,
             destinationCaller: '0x0000000000000000000000000000000000000000',
         };
-        const flow = 'preapproval'; // 'permit' || 'preapproval'
+        const flow = 'permit'; // 'permit' || 'preapproval'
         console.log('[Config] Flow:', flow);
         console.log('[Config] Params:', JSON.stringify(params, null, 2));
 
