@@ -6,7 +6,7 @@ const config = {
             usdcAddress: "0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238", // Sepolia USDC
             messageTransmitterAddress: "0xE737e5cEBEEBa77EFE34D4aa090756590b1CE275",
             tokenMessengerAddress: "0x8FE6B999Dc680CcFDD5Bf7EB0974218be2542DAA",
-            kitContractAddress: "0x754163311F4A3477BcB86e0317F98B994DfEbF7C",
+            kitContractAddress: "0xa4b3f907eD312C7d96Ed776c5993a4bE7C5022b3",
             circleDomain: 0
         },
         baseSepolia: {
