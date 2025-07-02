@@ -179,11 +179,6 @@ const bridgeWithPreapproval = async (wallet, network, bridgeParams, transferType
         console.log(`${k}:`, v);
     });
 
-    // Prepare arguments for bridgeWithPreapproval
-    const params = [orderedBridgeParams];
-
-    console.log('Burning USDC with args:', params);
-
     // Check gas requirements
     console.log('Checking gas requirements...');
     const checkedGasParams = await checkGasRequirements(
@@ -191,7 +186,7 @@ const bridgeWithPreapproval = async (wallet, network, bridgeParams, transferType
         network,
         kitContract,
         'bridgeWithPreapproval',
-        params
+        [orderedBridgeParams]
     );
     console.log('Gas check passed for bridgeWithPreapproval operation');
 
@@ -213,7 +208,7 @@ const bridgeWithPreapproval = async (wallet, network, bridgeParams, transferType
             maxPriorityFeePerGas: gasParams.maxPriorityFeePerGas.toString()
         });
 
-        const tx = await kitContract.bridgeWithPreapproval(params, gasParams);
+        const tx = await kitContract.bridgeWithPreapproval(orderedBridgeParams, gasParams);
 
         console.log('BridgeWithPreapproval transaction sent. Transaction hash:', tx.hash);
         console.log('Waiting for transaction confirmation...');
@@ -353,13 +348,6 @@ const bridgeWithPermit = async (wallet, network, bridgeParams, permitParams, tra
         console.log(`${k}:`, v);
     });
 
-    const params = [
-        orderedBridgeParams,
-        permitParams
-    ];
-
-    console.log('BridgeWithPermit with args:', params);
-
     // Check gas requirements
     console.log('Checking gas requirements...');
     const checkedGasParams = await checkGasRequirements(
@@ -367,7 +355,7 @@ const bridgeWithPermit = async (wallet, network, bridgeParams, permitParams, tra
         network,
         kitContract,
         'bridgeWithPermit',
-        params
+        [orderedBridgeParams,permitParams]
     );
     console.log('Gas check passed for bridgeWithPermit operation');
 
@@ -389,7 +377,7 @@ const bridgeWithPermit = async (wallet, network, bridgeParams, permitParams, tra
             maxPriorityFeePerGas: gasParams.maxPriorityFeePerGas.toString()
         });
 
-        const tx = await kitContract.bridgeWithPermit(params[0], params[1], gasParams);
+        const tx = await kitContract.bridgeWithPermit(orderedBridgeParams, permitParams, gasParams);
 
         console.log('BridgeWithPermit transaction sent. Transaction hash:', tx.hash);
         console.log('Waiting for transaction confirmation...');
