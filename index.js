@@ -93,7 +93,7 @@ async function main() {
             feeIsBips: false,
             destinationCaller: '0x0000000000000000000000000000000000000000',
         };
-        const flow = 'permit'; // 'permit' || 'preapproval'
+        const flow = 'preapproval'; // 'permit' || 'preapproval'
         console.log('[Config] Flow:', flow);
         console.log('[Config] Params:', JSON.stringify(params, null, 2));
 
@@ -126,9 +126,9 @@ async function main() {
         console.log('[Attestation] Attestation received:', attestation);
 
         // Uncomment to mint on destination
-        // console.log(`\n[Mint] Minting USDC on ${to} with attestation...`);
-        // const mintReceipt = await utils.mintUSDC(wallet, to, attestation.message, attestation.attestation);
-        // console.log('[Mint] Mint transaction hash:', mintReceipt.transactionHash);
+        console.log(`\n[Mint] Minting USDC on ${to} with attestation...`);
+        const mintReceipt = await utils.mintUSDC(wallet, to, attestation.message, attestation.attestation);
+        console.log('[Mint] Mint transaction hash:', mintReceipt.transactionHash);
 
         console.log('\n[Balances] Fetching final balances...');
         const [finalFrom, finalTo, finalFromNative, finalToNative] = await Promise.all([
