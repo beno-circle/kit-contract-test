@@ -174,11 +174,6 @@ const bridgeWithPreapproval = async (wallet, network, bridgeParams, transferType
         feeIsBips: bridgeParams.feeIsBips // bool
     };
 
-    console.log('orderedBridgeParams:', orderedBridgeParams);
-    Object.entries(orderedBridgeParams).forEach(([k, v]) => {
-        console.log(`${k}:`, v);
-    });
-
     // Check gas requirements
     console.log('Checking gas requirements...');
     const checkedGasParams = await checkGasRequirements(
@@ -343,11 +338,6 @@ const bridgeWithPermit = async (wallet, network, bridgeParams, permitParams, tra
         feeIsBips: bridgeParams.feeIsBips // bool
     };
 
-    console.log('orderedBridgeParams:', orderedBridgeParams);
-    Object.entries(orderedBridgeParams).forEach(([k, v]) => {
-        console.log(`${k}:`, v);
-    });
-
     // Check gas requirements
     console.log('Checking gas requirements...');
     const checkedGasParams = await checkGasRequirements(
@@ -423,9 +413,7 @@ const getAttestation = async (transactionHash, network) => {
             }
 
             const data = await response.json();
-            console.log('Attestation data:', data);
             if (data?.messages?.[0]?.status === 'complete') {
-                console.log('Attestation retrieved!');
                 return data.messages[0];
             }
 

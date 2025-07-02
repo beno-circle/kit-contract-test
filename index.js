@@ -4,15 +4,6 @@ const utils = require('./utils');
 const config = require('./config');
 
 async function bridgeWithPermitFlow(params) {
-    console.log('\n[Permit Flow] Generating permit signature with parameters:');
-    console.log(JSON.stringify({
-        wallet: params.wallet.address,
-        network: params.from,
-        tokenAddress: config.networks[params.from].usdcAddress,
-        spender: config.networks[params.from].kitContractAddress,
-        value: params.amountToBridge,
-        deadline: Math.floor(Date.now() / 1000) + 3600
-    }, null, 2));
     const permitParams = await utils.generatePermitSignature({
         wallet: params.wallet,
         network: params.from,
@@ -23,6 +14,7 @@ async function bridgeWithPermitFlow(params) {
         provider: utils.getProvider(params.from)
     });
     console.log('[Permit Flow] Permit signature generated:', permitParams);
+
     const bridgeParams = {
         amount: params.amountToBridge,
         destinationDomain: config.networks[params.to].circleDomain,
@@ -33,6 +25,7 @@ async function bridgeWithPermitFlow(params) {
         destinationCaller: params.destinationCaller
     };
     console.log('[Permit Flow] Calling bridgeWithPermit with params:', bridgeParams);
+
     const receipt = await utils.bridgeWithPermit(
         params.wallet,
         params.from,
@@ -40,19 +33,14 @@ async function bridgeWithPermitFlow(params) {
         permitParams,
         params.transferType
     );
-    console.log('[Permit Flow] bridgeWithPermit transaction receipt:', receipt);
     return receipt;
 }
 
 async function bridgeWithPreapprovalFlow(params) {
     console.log('\n[Preapproval Flow] Checking/approving USDC for bridge:');
-    console.log(JSON.stringify({
-        wallet: params.wallet.address,
-        network: params.from,
-        amount: params.amountToBridge
-    }, null, 2));
     const approveReceipt = await utils.approveUSDC(params.wallet, params.from, params.amountToBridge);
-    console.log('[Preapproval Flow] Approve USDC result:', approveReceipt);
+    console.log('[Preapproval Flow] Approve USDC result:', approveReceipt.transactionHash);
+
     const bridgeParams = {
         amount: params.amountToBridge,
         destinationDomain: config.networks[params.to].circleDomain,
@@ -69,8 +57,20 @@ async function bridgeWithPreapprovalFlow(params) {
         bridgeParams,
         params.transferType
     );
-    console.log('[Preapproval Flow] bridgeWithPreapproval transaction receipt:', receipt);
     return receipt;
+}
+
+async function fetchBalances(wallet, from, to) {
+    const [fromBalance, toBalance, fromNative, toNative] = await Promise.all([
+        utils.getUSDCBalance(wallet, from),
+        utils.getUSDCBalance(wallet, to),
+        utils.getNativeBalance(wallet, from),
+        utils.getNativeBalance(wallet, to)
+    ]);
+    console.log(`[Balances] ${from} USDC: ${fromBalance}`);
+    console.log(`[Balances] ${to} USDC: ${toBalance}`);
+    console.log(`[Balances] ${from} Native: ${fromNative}`);
+    console.log(`[Balances] ${to} Native: ${toNative}`);
 }
 
 async function main() {
@@ -80,7 +80,12 @@ async function main() {
         console.log('[Init] Wallet address:', wallet.address);
         const from = 'sepolia';
         const to = 'baseSepolia';
-        const amountToBridge = "0.1";
+        const amountToBridge = "1";
+        const flow = 'permit'; // 'permit' || 'preapproval'
+
+        console.log('[Config] Flow:', flow);
+        console.log(`[Info] From: ${from} -> To: ${to} - Amount: ${amountToBridge}`)
+
         const params = {
             wallet,
             from,
@@ -91,27 +96,11 @@ async function main() {
             fee: ethers.BigNumber.from(0),
             feeRecipient: wallet.address,
             feeIsBips: false,
-            destinationCaller: '0x0000000000000000000000000000000000000000',
+            destinationCaller: '0x0',
         };
-        const flow = 'preapproval'; // 'permit' || 'preapproval'
-        console.log('[Config] Flow:', flow);
-        console.log('[Config] Params:', JSON.stringify(params, null, 2));
 
         console.log('\n[Balances] Fetching initial balances...');
-        const [fromBalance, toBalance, fromNative, toNative] = await Promise.all([
-            utils.getUSDCBalance(wallet, from),
-            utils.getUSDCBalance(wallet, to),
-            utils.getNativeBalance(wallet, from),
-            utils.getNativeBalance(wallet, to)
-        ]);
-        console.log(`[Balances] ${from} USDC: ${fromBalance}`);
-        console.log(`[Balances] ${to} USDC: ${toBalance}`);
-        console.log(`[Balances] ${from} Native: ${fromNative}`);
-        console.log(`[Balances] ${to} Native: ${toNative}`);
-
-        if (ethers.utils.parseEther(fromNative).lt(ethers.utils.parseEther('0.01'))) {
-            throw new Error(`[Balances] Insufficient native token on ${from}`);
-        }
+        await fetchBalances(wallet, from, to);
 
         let bridgeReceipt;
         if (flow === 'permit') {
@@ -123,24 +112,15 @@ async function main() {
 
         console.log('\n[Attestation] Waiting for attestation from Iris...');
         const attestation = await utils.getAttestation(bridgeReceipt.transactionHash, from);
-        console.log('[Attestation] Attestation received:', attestation);
+        console.log('[Attestation] Attestation received:', attestation.attestation);
 
-        // Uncomment to mint on destination
         console.log(`\n[Mint] Minting USDC on ${to} with attestation...`);
         const mintReceipt = await utils.mintUSDC(wallet, to, attestation.message, attestation.attestation);
         console.log('[Mint] Mint transaction hash:', mintReceipt.transactionHash);
 
         console.log('\n[Balances] Fetching final balances...');
-        const [finalFrom, finalTo, finalFromNative, finalToNative] = await Promise.all([
-            utils.getUSDCBalance(wallet, from),
-            utils.getUSDCBalance(wallet, to),
-            utils.getNativeBalance(wallet, from),
-            utils.getNativeBalance(wallet, to)
-        ]);
-        console.log(`[Balances] ${from} USDC: ${finalFrom}`);
-        console.log(`[Balances] ${to} USDC: ${finalTo}`);
-        console.log(`[Balances] ${from} Native: ${finalFromNative}`);
-        console.log(`[Balances] ${to} Native: ${finalToNative}`);
+        await fetchBalances(wallet, from, to);
+
         console.log('==================== BRIDGE TEST SCRIPT END ====================');
     } catch (error) {
         console.error('[Error]', error.message);
